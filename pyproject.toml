@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "sentinel"
+version = "0.2.0"
+description = "AI-Augmented Security Orchestrator — reduces false positives in vulnerability scans using LLM verification."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Yaser Rahmah"}
+]
+
+dependencies = [
+    "click>=8.1",
+    "requests>=2.31",
+    "openai>=1.50",
+    "colorama>=0.4",
+    "jinja2>=3.1",
+    "google-generativeai>=0.8",
+    "anthropic>=0.39",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[project.scripts]
+sentinel = "sentinel.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["sentinel*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

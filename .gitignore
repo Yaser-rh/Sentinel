@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.vscode/
+.idea/
+
+# Virtual environments
+venv/
+env/
+.env
+.venv/
+
+# Build and Packaging
+*.egg-info/
+build/
+dist/
+
+# Tool outputs
+trivy_results.json
+semgrep_results.json
+sentinel.log
+sentinel_report*.html
+sentinel_report_*/
+
+# Configuration / Secrets
+sentinel.yaml
+
+# Downloaded Binaries
+bin/
+
+# Sample / Vulnerable Apps
+Vulnerable-Flask-App/
+
+# Sentinel internal
+.sentinel_cache
+.pytest_cache/

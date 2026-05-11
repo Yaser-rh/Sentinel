@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentinel Security Report</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 2rem;
+        background-color: #f9fafb;
+        color: #111827;
+      }
+      h1 {
+        color: #1f2937;
+      }
+      .dashboard {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        flex: 1;
+        text-align: center;
+      }
+      .card h3 { margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem; text-transform: uppercase; }
+      .card .number { font-size: 2rem; font-weight: bold; }
+      .card .number.critical { color: #dc2626; }
+      .card .number.high { color: #ea580c; }
+      .card .number.tp { color: #dc2626; }
+      .card .number.fp { color: #16a34a; }
+      .filters {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .filter-group label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+      }
+      .filters select {
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        background-color: white;
+        min-width: 150px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      th {
+        background-color: #f3f4f6;
+        font-weight: 600;
+      }
+      .severity-critical {
+        color: #dc2626;
+        font-weight: bold;
+      }
+      .severity-high {
+        color: #ea580c;
+        font-weight: bold;
+      }
+      .severity-medium {
+        color: #d97706;
+        font-weight: bold;
+      }
+      .severity-low {
+        color: #6b7280;
+        font-weight: bold;
+      }
+      .status-tp {
+        background-color: #fee2e2;
+        color: #991b1b;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.875rem;
+      }
+      .status-fp {
+        background-color: #dcfce7;
+        color: #166534;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.875rem;
+      }
+      .status-error {
+        background-color: #fef3c7;
+        color: #92400e;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.875rem;
+      }
+      .details-row {
+        display: none;
+        background-color: #f8fafc;
+      }
+      .details-content {
+        padding: 1rem;
+      }
+      .confidence-bar {
+        display: inline-block;
+        width: 60px;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+      .confidence-fill {
+        height: 100%;
+        border-radius: 4px;
+      }
+      pre {
+        background: #1e293b;
+        color: #f8fafc;
+        padding: 1rem;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+    </style>
+    <script>
+      function toggleDetails(id) {
+        var row = document.getElementById("details-" + id);
+        row.style.display =
+          row.style.display === "table-row" ? "none" : "table-row";
+      }
+
+      function applyFilters() {
+        const toolFilter = document.getElementById("filter-tool").value;
+        const severityFilter = document.getElementById("filter-severity").value;
+        const statusFilter = document.getElementById("filter-status").value;
+
+        const rows = document.querySelectorAll(".finding-row");
+        rows.forEach((row) => {
+          const tool = row.getAttribute("data-tool");
+          const severity = row.getAttribute("data-severity");
+          const status = row.getAttribute("data-status");
+
+          const toolMatch = !toolFilter || tool.includes(toolFilter);
+          const severityMatch = !severityFilter || severity === severityFilter;
+          const statusMatch = !statusFilter || status === statusFilter;
+
+          if (toolMatch && severityMatch && statusMatch) {
+            row.style.display = "table-row";
+          } else {
+            row.style.display = "none";
+            // Also hide details row if visible
+            const id = row.id.split("-")[1];
+            document.getElementById("details-" + id).style.display = "none";
+          }
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Sentinel Security Report {% if timestamp %}({{ timestamp }}){% endif %}</h1>
+
+    {% set ns = namespace(critical=0, high=0, tp=0, fp=0) %}
+    {% for finding in findings %}
+      {% if finding.severity == 'CRITICAL' %}{% set ns.critical = ns.critical + 1 %}{% endif %}
+      {% if finding.severity == 'HIGH' %}{% set ns.high = ns.high + 1 %}{% endif %}
+      {% if finding.ai_analysis and finding.ai_analysis.status == 'True Positive' %}{% set ns.tp = ns.tp + 1 %}{% endif %}
+      {% if finding.ai_analysis and finding.ai_analysis.status == 'False Positive' %}{% set ns.fp = ns.fp + 1 %}{% endif %}
+    {% endfor %}
+
+    <div class="dashboard">
+      <div class="card">
+        <h3>Total Findings</h3>
+        <p class="number">{{ findings|length }}</p>
+      </div>
+      <div class="card">
+        <h3>Critical</h3>
+        <p class="number critical">{{ ns.critical }}</p>
+      </div>
+      <div class="card">
+        <h3>High</h3>
+        <p class="number high">{{ ns.high }}</p>
+      </div>
+      <div class="card">
+        <h3>True Positives</h3>
+        <p class="number tp">{{ ns.tp }}</p>
+      </div>
+      <div class="card">
+        <h3>False Positives</h3>
+        <p class="number fp">{{ ns.fp }}</p>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label>Tool/Type</label>
+        <select id="filter-tool" onchange="applyFilters()">
+          <option value="">All Tools</option>
+          <option value="SCA">Trivy (SCA)</option>
+          <option value="SAST">Semgrep (SAST)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Severity</label>
+        <select id="filter-severity" onchange="applyFilters()">
+          <option value="">All Severities</option>
+          <option value="CRITICAL">Critical</option>
+          <option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>AI Verdict</label>
+        <select id="filter-status" onchange="applyFilters()">
+          <option value="">All Verdicts</option>
+          <option value="True Positive">True Positive</option>
+          <option value="False Positive">False Positive</option>
+        </select>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tool</th>
+          <th>Severity</th>
+          <th>AI Verdict</th>
+          <th>Confidence</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for finding in findings %}
+        {% set ai = finding.ai_analysis if finding.ai_analysis else {} %}
+        <tr
+          id="row-{{ loop.index }}"
+          class="finding-row"
+          data-tool="{{ finding.tool | default('') }}"
+          data-severity="{{ finding.severity }}"
+          data-status="{{ ai.status | default('') }}"
+          onclick="toggleDetails('{{ loop.index }}')"
+          style="cursor: pointer"
+        >
+          <td>{{ finding.id }}</td>
+          <td>{{ finding.tool | default('Unknown') }}</td>
+          <td class="severity-{{ finding.severity|lower }}">
+            {{ finding.severity }}
+          </td>
+          <td>
+            {% if ai.status == 'True Positive' %}
+            <span class="status-tp">Confirmed Risk</span>
+            {% elif ai.status == 'False Positive' %}
+            <span class="status-fp">False Positive</span>
+            {% elif ai.status == 'Error' %}
+            <span class="status-error">Error</span>
+            {% else %}
+            <span class="status-error">{{ ai.status | default('Unknown') }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ai.confidence is defined %}
+            {{ ai.confidence }}%
+            <span class="confidence-bar">
+              <span class="confidence-fill" style="width: {{ ai.confidence }}%; background: {% if ai.confidence >= 80 %}#16a34a{% elif ai.confidence >= 50 %}#d97706{% else %}#dc2626{% endif %};"></span>
+            </span>
+            {% else %}
+            -
+            {% endif %}
+          </td>
+          <td><button>View Details</button></td>
+        </tr>
+        <tr id="details-{{ loop.index }}" class="details-row">
+          <td colspan="6">
+            <div class="details-content">
+              <h4>AI Reasoning</h4>
+              <p>{{ ai.reason | default('No analysis available.') }}</p>
+              {% if ai.secure_code_suggestion %}
+              <h4>Suggested Fix</h4>
+              <pre><code>{{ ai.secure_code_suggestion }}</code></pre>
+              {% endif %}
+              {% if finding.package %}
+              <p><strong>Package:</strong> {{ finding.package }} {{ finding.version | default('') }}
+              {% if finding.fixed_version %} &rarr; Fix: {{ finding.fixed_version }}{% endif %}</p>
+              {% endif %}
+              {% if finding.file %}
+              <p><strong>File:</strong> {{ finding.file }}{% if finding.line %} (line {{ finding.line }}){% endif %}</p>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %} {% if not findings %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 2rem">
+            No vulnerabilities found!
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </body>
+</html>

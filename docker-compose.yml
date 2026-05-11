@@ -1,0 +1,12 @@
+services:
+  sentinel:
+    build: .
+    volumes:
+      # Mount the project you want to scan
+      - ./sample-project:/project
+    environment:
+      # Pass your API key (set in .env or shell)
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    command: scan --target . --level ALL
