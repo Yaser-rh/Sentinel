@@ -66,9 +66,9 @@ sentinel scan --target ./myapp
 
 ## Supported AI Providers
 
-- **OpenAI** (GPT-4, GPT-3.5)
-- **Google Gemini** (Gemini 1.5 Flash, etc.)
-- **Anthropic** (Claude 3 Opus/Sonnet/Haiku)
+- **OpenAI** (GPT models)
+- **Google Gemini** (Gemini models)
+- **Anthropic** (Claude models)
 
 ## Configuration
 

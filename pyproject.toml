@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentinel"
@@ -35,7 +35,10 @@ dev = [
 sentinel = "sentinel.cli:cli"
 
 [tool.setuptools.packages.find]
-include = ["sentinel*"]
+include = ["sentinel*", "tools*"]
+
+[tool.setuptools.package-data]
+"sentinel" = ["reporting/templates/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

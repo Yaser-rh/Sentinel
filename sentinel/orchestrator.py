@@ -124,9 +124,14 @@ class Orchestrator:
         if target_level == "ALL":
             return True
 
-        hierarchy = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+        hierarchy = {
+            "LOW": 1, "INFO": 1,
+            "MEDIUM": 2, "WARNING": 2,
+            "HIGH": 3, "ERROR": 3,
+            "CRITICAL": 4
+        }
         f_val = hierarchy.get(finding_severity, 0)
-        t_val = hierarchy.get(target_level, 3)
+        t_val = hierarchy.get(target_level, 1)
 
         return f_val >= t_val
 
